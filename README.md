@@ -10,4 +10,7 @@
 - bucket-operate 对bucket的操作
   > https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/example_s3_CreateBucket_section.html
   > https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/example_s3_DeleteBucket_section.html
-- 
+- upload-file 单个文件传
+  > https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/example_s3_PutObject_section.html
+- muti-upload-file 大文件分段上传
+  > 
