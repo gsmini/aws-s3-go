@@ -14,3 +14,5 @@
   > https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/example_s3_PutObject_section.html
 - muti-upload-file 大文件分段上传
   > https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/mpuoverview.html
+- gen-file-sign-url 生成带有效期的访问签名
+ > https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/example_s3_Scenario_PresignedUrl_section.html
