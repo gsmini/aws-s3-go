@@ -4,4 +4,10 @@
 
 # 目录说明
 - config-file 配置文件方式配置s3的访问密钥
+  > https://docs.aws.amazon.com/zh_cn/sdkref/latest/guide/file-format.html#file-format-creds
 - static-credential 静态认证方配置s3的访问密钥
+  > https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#static-credentials
+- bucket-operate 对bucket的操作
+  > https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/example_s3_CreateBucket_section.html
+  > https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/example_s3_DeleteBucket_section.html
+- 
