@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func SignUrl(client *s3.Client, bucketName, Key string) string {
+func PresignPutUrl(client *s3.Client, bucketName, Key string) string {
 	defer func() (bool, string) {
 		if err := recover(); err != nil {
 			reason := fmt.Sprintf("Runtime panic caught: %v\n", err)
@@ -23,29 +23,31 @@ func SignUrl(client *s3.Client, bucketName, Key string) string {
 
 		return true, ""
 	}()
-	fmt.Println("Create Presign client")
 	presignClient := s3.NewPresignClient(client)
-
-	presignParams := &s3.GetObjectInput{
+	putObjectInput := &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(Key),
 	}
-
-	// Apply an expiration via an option function
+	// 操作过期时间
+	// loger.Debug("BrowserPostPreSign()", zap.Int64("now", now))
+	//expire := time.Now().Unix() + 5*60
+	//expiration := time.Unix(expire, 0).In(time.UTC).Format("2006-01-02T15:04:05.000Z")
 	presignDuration := func(po *s3.PresignOptions) {
-		po.Expires = 5 * time.Minute
+		po.Expires = 5 * time.Minute //不设置默认900s
+
 	}
 
-	presignResult, err := presignClient.PresignGetObject(context.TODO(), presignParams, presignDuration)
-
+	presignResult, err := presignClient.PresignPutObject(context.TODO(), putObjectInput, presignDuration)
+	fmt.Printf("%s", presignResult.URL)
 	if err != nil {
 		panic("Couldn't get presigned URL for GetObject")
 	}
 
-	fmt.Printf("Presigned URL For object: %s\n", presignResult.URL)
-	return presignResult.URL
+	url := fmt.Sprintf("%s\n", presignResult.URL)
+	return url
 
 }
+
 func main() {
 	// Load the Shared AWS Configuration (~/.aws/config)
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -55,7 +57,18 @@ func main() {
 	// Create an Amazon S3 service client
 	client := s3.NewFromConfig(cfg)
 
-	signUrl := SignUrl(client, "uniquebucket1233", "iu.jpeg")
+	presignUrl := PresignPutUrl(client, "uniquebucket1233", "xxxx.jpeg")
 
-	fmt.Printf("签名后的url地址为:%s", signUrl)
+	fmt.Printf("\n%s", presignUrl)
+	//生成的链接采用requests.put访问上传文件 python demo
+	/*
+		import pprint
+		import requests
+
+		url = ""
+		with open("iu.jpeg", 'rb') as f:
+		    files = {'file': ("xxxx.jpeg", f)}
+		    http_response = requests.put(url,  files=files)
+		    pprint.pprint(http_response.text)
+	*/
 }
