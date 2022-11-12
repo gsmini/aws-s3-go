@@ -36,7 +36,7 @@ func PresignPutUrl(client *s3.Client, bucketName, Key string) string {
 		po.Expires = 5 * time.Minute //不设置默认900s
 
 	}
-	//生成的链接采用requests.post访问上传文件
+	//生成的链接采用requests.put访问上传文件
 	/*
 		import pprint
 		import requests
