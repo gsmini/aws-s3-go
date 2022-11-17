@@ -376,5 +376,5 @@ dist
 test/services
 web_app
 .air.toml
-tmp
+tmp/
 .idea
