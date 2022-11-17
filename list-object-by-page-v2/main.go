@@ -1,69 +1,66 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"log"
 	"time"
 )
 
-func listObjectPage(pageSize int64, startAfter string, prefix string) (data []string, count int64) {
+// https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/API_ListObjectsV2.html
+func listObjectPage(client *s3.Client, pageSize int32, startAfter string, prefix string) (data []string, count int32) {
 	start := time.Now() // 获取当前时间
 	bucket := "uniquebucket1233"
-	region := "ap-northeast-1"
-	awsAccessKeyId := "AKIA5GCI6ENEWRGCAP7D"
-	awsSecretAccessKey := "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"
-	// 1668268860000 2022-11-13 00:01:00 算到小时 按照前缀匹配
-	//today_prefix := "iot/xdasj12dxj/2022/11/13/continuous_event"
+	//s3 的页不是和平时的api page page-size一样，这里是利用StartAfter方式分页的，也就是"从这个文件开始查找后面的"
+	outPut, err := client.ListObjectsV2(context.TODO(),
+		&s3.ListObjectsV2Input{
+			Bucket:     aws.String(bucket),
+			Prefix:     aws.String(prefix),
+			MaxKeys:    pageSize,
+			StartAfter: aws.String(startAfter)},
+	)
+	if err != nil {
+		fmt.Printf("查询错误%s", err.Error())
+	}
 
-	sess, _ := session.NewSession(&aws.Config{
-		Region:      aws.String(region),                                                       //桶所在的区域
-		Credentials: credentials.NewStaticCredentials(awsAccessKeyId, awsSecretAccessKey, ""), //sts的临时凭证
-	})
-
-	svc := s3.New(sess)
-
-	StartAfter := aws.String(startAfter)
-
-	svc.ListObjectsV2Pages(&s3.ListObjectsV2Input{Bucket: aws.String(bucket), Prefix: &prefix, MaxKeys: &pageSize, StartAfter: StartAfter},
-		func(page *s3.ListObjectsV2Output, lastPage bool) bool {
-			fmt.Println(*page.KeyCount)
-			for _, item := range page.Contents {
-				fmt.Println("Name:         ", *item.Key)
-				data = append(data, *item.Key)
-
-			}
-
-			return false //翻页
-		})
-
-	elapsed := time.Since(start)
 	//go build && ./main
 	fmt.Println("开始时间：", start)
-	fmt.Println("该函数执行完成耗时：", elapsed)   //4.316053768s  2.431293798s
-	fmt.Println("两天获取的数据大小为", len(data)) //2880 之前生成了两天的数据 60*24 *2(1min上传一次视频文件)
-	return data, int64(len(data))
+	fmt.Println("该函数执行完成耗时：", time.Since(start))
+	fmt.Println("两天获取的数据大小为", len(outPut.Contents))
+
+	for _, item := range outPut.Contents {
+		data = append(data, *item.Key)
+		//fmt.Println(*item.Key)
+	}
+	return data, int32(len(outPut.Contents))
 }
 func main() {
-	var pageSize int64 = 500
-	var count int64 = 0
+	var pageSize int32 = 500
+	var count int32 = 0
 	var result []string
 	startAfter := ""
-	prefix := "iot/xdasj12dxj/2022/11/13/continuous"
+	prefix := "iot/xdasj12dxj/2022/11/13/"
+	// Load the Shared AWS Configuration (~/.aws/config)
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Create an Amazon S3 service client
+	client := s3.NewFromConfig(cfg)
 
-	//假设这是前段访问：每页pageSize个，如果返回的结果小于pageSize，说明已经是最后一页
+	//假设这是前端访问：每页pageSize个，如果返回的结果小于pageSize，说明已经是最后一页
 	for {
-		data, dataCount := listObjectPage(pageSize, startAfter, prefix)
+		data, dataCount := listObjectPage(client, pageSize, startAfter, prefix)
 		count = dataCount
-		startAfter = data[count-1] //取最后一个作为筛选过滤的s3 key
+		startAfter = data[count-1] //取最后一个作为筛选过滤的s3 key传递给startAfter
 		fmt.Printf("当前获取的数据长度为:%d", dataCount)
 		result = append(result, data...)
 		if count < pageSize {
 			break
 		}
-
 	}
 	fmt.Println(len(result))
 
